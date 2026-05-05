@@ -2,6 +2,7 @@ using Alza.AggregationBackendService.Clients;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using System.Text;
 
 const string KEY = "super_secret_dev_key_12345"; // pouze pro demo
@@ -35,6 +36,13 @@ builder.Services.AddHttpClient<IStockClient, StockClient>((sp, client) =>
     var options = sp.GetRequiredService<IOptions<StockClientOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
 });
+
+Serilog.Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+builder.Host.UseSerilog();
+
 
 //builder.Services.AddSwaggerGen(options =>
 //{
