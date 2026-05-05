@@ -1,0 +1,6 @@
+@Alza.AggregationBackendService_HostAddress = http://localhost:5117
+
+GET {{Alza.AggregationBackendService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

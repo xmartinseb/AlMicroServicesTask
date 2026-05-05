@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Alza.AggregationBackendService/Alza.AggregationBackendService.csproj" />
+  <Project Path="Alza.HttpExtensions/Alza.HttpExtensions.csproj" Id="ed7f0b40-a7b1-4795-ba81-5dec773d8c05" />
+  <Project Path="Alza.PricingService/Alza.PricingService.csproj" Id="5bba5423-2a19-4d55-964f-8eea075556e9" />
+  <Project Path="Alza.ProductService/Alza.ProductService.csproj" Id="bb47508b-c994-4845-abb6-3b0602af5f53" />
+  <Project Path="Alza.StockService/Alza.StockService.csproj" Id="617f0371-a527-4503-81dd-138c43500eca" />
+</Solution>
