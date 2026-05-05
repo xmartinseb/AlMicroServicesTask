@@ -16,7 +16,7 @@ public static class HttpClientExtensions
         catch (OperationCanceledException ex)
         {
             if (cancellationToken.IsCancellationRequested)
-                throw new ExternalServiceException("Http request has been canceled by the user");
+                throw;
             else
                 throw new ExternalServiceTimeoutException(ex);
         }

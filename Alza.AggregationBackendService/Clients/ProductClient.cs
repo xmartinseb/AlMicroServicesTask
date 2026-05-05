@@ -1,4 +1,6 @@
-﻿using Alza.HttpExtensions;
+﻿using Alza.AggregationBackendService.Clients.Cached;
+using Alza.HttpExtensions;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Alza.AggregationBackendService.Clients;
 
@@ -19,5 +21,13 @@ public sealed record Product(Guid Id, string ImageUrl, string Name);
 public class ProductClientOptions
 {
     public string BaseUrl { get; set; } = string.Empty;
-    public TimeSpan CacheLoadedData { get; set; }
+    public TimeSpan CachedDataTTL { get; set; }
+}
+
+public sealed class CachedProductClient(IProductClient productClient, IMemoryCache cache, ProductClientOptions options)
+    : CachedClientBase<Product>(cache, options.CachedDataTTL)
+
+{
+    protected override Task<Product> GetDataFromExternalServiceAsync(Guid objectId, CancellationToken cancellationToken)
+        => productClient.GetProductAsync(objectId, cancellationToken);
 }

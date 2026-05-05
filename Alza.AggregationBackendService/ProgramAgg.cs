@@ -43,6 +43,10 @@ Serilog.Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Host.UseSerilog();
 
+builder.Services.AddScoped<CachedProductClient>();
+builder.Services.AddScoped<CachedPricingClient>();
+builder.Services.AddScoped<CachedStockClient>();
+
 
 //builder.Services.AddSwaggerGen(options =>
 //{

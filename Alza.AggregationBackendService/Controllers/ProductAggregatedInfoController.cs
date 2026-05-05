@@ -8,16 +8,16 @@ namespace Alza.AggregationBackendService.Controllers;
 [ApiController]
 [Route("[controller]")]
 //[Authorize]
-public sealed class ProductAggregatedInfoController(IProductClient productClient, IPricingClient pricingClient, IStockClient stockClient,
+public sealed class ProductAggregatedInfoController(
+    CachedProductClient cachedProductClient, CachedPricingClient cachedPricingClient, CachedStockClient cachedStockClient,
     ILogger<ProductAggregatedInfoController> logger) : ControllerBase
 {
-
     [HttpGet("{productId}")]
     public async Task<ProductAggregaredInfo> Get(Guid productId, CancellationToken cancellationToken)
     {
-        var getProductTask = productClient.GetProductAsync(productId, cancellationToken);
-        var getPriceTask = pricingClient.GetProductPriceAsync(productId, cancellationToken);
-        var getAvailabilityTask = stockClient.GetProductAvailabilityAsync(productId, cancellationToken);
+        var getProductTask = cachedProductClient.GetObjectAsync(productId, cancellationToken);
+        var getPriceTask = cachedPricingClient.GetObjectAsync(productId, cancellationToken);
+        var getAvailabilityTask = cachedStockClient.GetObjectAsync(productId, cancellationToken);
 
         var warnings = new List<string>();
         var product = await GetResultOrWarning(getProductTask, warnings, "Product service");
@@ -27,12 +27,12 @@ public sealed class ProductAggregatedInfoController(IProductClient productClient
         return new ProductAggregaredInfo(productId, product?.Name, product?.ImageUrl, price?.Price, availability?.Amount, warnings);
     }
 
-    async Task<T?> GetResultOrWarning<T>(Task<T> httpRequestTask, List<string> outputWarnings, string serviceName)
+    async Task<T?> GetResultOrWarning<T>(Task<T> loadingFromCachedClientTask, List<string> outputWarnings, string serviceName)
         where T : class
     {
         try
         {
-            return await httpRequestTask;
+            return await loadingFromCachedClientTask;
         }
         catch (ExternalServiceHttpException ex)
         {
@@ -49,9 +49,14 @@ public sealed class ProductAggregatedInfoController(IProductClient productClient
             logger.LogError(ex, "{Service} failed", serviceName);
             outputWarnings.Add($"{serviceName} failed: {ex.Message}");
         }
+        catch (OperationCanceledException ex)
+        {
+            logger.LogInformation(ex, "Loading from cached {Service} has been canceled", serviceName);
+            outputWarnings.Add($"Loading from {serviceName} has been canceled");
+        }
         catch (Exception ex)
         {
-            logger.LogError(ex, "{Service} unexpected failure", serviceName);
+            logger.LogError(ex, "Unexpected failure while loading data from cached {Service}", serviceName);
             outputWarnings.Add($"{serviceName} failed with an unexpected error");
         }
 

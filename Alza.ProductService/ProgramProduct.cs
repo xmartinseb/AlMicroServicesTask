@@ -1,3 +1,4 @@
+using Alza.ProductService.Config;
 using Alza.ProductService.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,8 @@ builder.Services.AddScoped<IProductDb, PseudoProductDb>();
 builder.Services.AddEndpointsApiExplorer(); // TODO: k cemu je toto
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
+builder.Services.Configure<CacheOptions>(builder.Configuration.GetSection("Cache"));
+
 var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
