@@ -14,12 +14,12 @@ public class ProductController(IProductDb db, IMemoryCache cache, IOptions<Cache
 {
     [HttpGet("{productId}")]
     public async Task<Product> Get(Guid productId, CancellationToken cancellationToken)
-        => await cache.GetOrCreateAsync(productId.ToString(), async entry =>
+        => (await cache.GetOrCreateAsync(productId.ToString(), async entry =>
         {
             var product = await db.GetProductAsync(productId, cancellationToken);
             var ttl = cacheConfig.Value.DataTTL;
             logger.LogInformation("New cache entry of type Product; Id={productId}, name = {productName}, TTL={ttl}", product.Id, product.Name, ttl);
             entry.AbsoluteExpirationRelativeToNow = ttl;
             return product;
-        }) ?? throw new Exception("Loaded product is null");
+        }))!;
 }

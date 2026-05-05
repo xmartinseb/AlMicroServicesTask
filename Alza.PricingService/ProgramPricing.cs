@@ -1,3 +1,4 @@
+using Alza.PricingService.Config;
 using Alza.PricingService.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +9,8 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IPricingDb, PseudoPricingDb>();
 builder.Services.AddEndpointsApiExplorer(); // TODO: k cemu je toto
 builder.Services.AddSwaggerGen();
+builder.Services.AddMemoryCache();
+builder.Services.Configure<CacheOptions>(builder.Configuration.GetSection("Cache"));
 var app = builder.Build();
 // Configure the HTTP request pipeline.
 
@@ -20,9 +23,6 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

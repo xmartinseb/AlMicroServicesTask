@@ -1,22 +1,25 @@
+using Alza.PricingService.Config;
 using Alza.PricingService.Data;
 using Alza.PricingService.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace Alza.PricingService.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class ProductPriceController(IPricingDb db) : ControllerBase
+public class ProductPriceController(IPricingDb db, IMemoryCache cache, IOptions<CacheOptions> cacheConfig,
+    ILogger<ProductPriceController> logger) : ControllerBase
 {
     [HttpGet("{productId}")]
     public async Task<ProductPrice> Get(Guid productId, CancellationToken cancellationToken)
-    {
-        // Note: this service requires some latency and occasional failures to simulate real-world conditions and test resilience of the system.
-        await Task.Delay(TimeSpan.FromMilliseconds(Random.Shared.Next(500, 800)), cancellationToken);
-        if (Random.Shared.Next(100) < 10)
-            throw new Exception("Random failure in pricing service");
-        
-        var price = await db.GetProductPriceAsync(productId, cancellationToken);
-        return price;
-    }
+        => (await cache.GetOrCreateAsync(productId.ToString(), async entry =>
+        {
+            var productPrice = await db.GetProductPriceAsync(productId, cancellationToken);
+            var ttl = cacheConfig.Value.DataTTL;
+            logger.LogInformation("Price of product {product} retrieved from db ({price})", productId, productPrice.Price);
+            entry.AbsoluteExpirationRelativeToNow = ttl;
+            return productPrice;
+        }))!;
 }

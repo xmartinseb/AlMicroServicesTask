@@ -1,3 +1,4 @@
+using Alza.StockService.Config;
 using Alza.StockService.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +9,8 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IStockDb, PseudoStockDb>();
 builder.Services.AddEndpointsApiExplorer(); // TODO: k cemu je toto
 builder.Services.AddSwaggerGen();
+builder.Services.AddMemoryCache();
+builder.Services.Configure<CacheOptions>(builder.Configuration.GetSection("Cache"));
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -19,9 +22,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
