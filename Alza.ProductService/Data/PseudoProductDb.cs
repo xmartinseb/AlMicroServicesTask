@@ -6,7 +6,7 @@ public sealed class PseudoProductDb : IProductDb
 {
     public async Task<Product> GetProductAsync(Guid productId, CancellationToken cancellationToken)
     {
-        await Task.Delay(TimeSpan.FromMilliseconds(200 * Random.Shared.NextDouble()), cancellationToken).ConfigureAwait(false);
+        await Task.Delay(TimeSpan.FromMilliseconds(200 * Random.Shared.NextDouble()), cancellationToken);
         return new Product(productId, $"https://example.com/product/xl/{productId}", GetRandomProductName());
     }
 

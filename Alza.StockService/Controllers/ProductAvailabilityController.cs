@@ -11,7 +11,7 @@ public class ProductAvailabilityController(IStockDb db) : ControllerBase
     [HttpGet("{productId}")]
     public async Task<ProductAvailability> Get(Guid productId, CancellationToken cancellationToken)
     {
-        var productAvail = await db.GetProductAvailabilityAsync(productId, cancellationToken).ConfigureAwait(false);
+        var productAvail = await db.GetProductAvailabilityAsync(productId, cancellationToken);
         return productAvail;
     }
 }
