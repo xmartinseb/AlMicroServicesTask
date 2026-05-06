@@ -10,8 +10,8 @@ public interface IStockClient
     Task<ProductAvailability> GetProductAvailabilityAsync(Guid productId, CancellationToken cancellationToken);
 }
 
-public sealed class StockClient(HttpClient httpClient, IOptions<StockClientOptions> clientOps) 
-    : ResilientHttpClientBase(httpClient, clientOps.Value.HttpRetryStrategy), IStockClient
+public sealed class StockClient(HttpClient httpClient, IOptions<StockClientOptions> clientOps, ILogger<StockClient> logger) 
+    : ResilientHttpClientBase(httpClient, logger, clientOps.Value.HttpRetryStrategy), IStockClient
 {
     public Task<ProductAvailability> GetProductAvailabilityAsync(Guid productId, CancellationToken cancellationToken)
         => ExecuteRetryStrategy(client => client.UserFriendlyGetObjectAsync<ProductAvailability>($"/ProductAvailability/{productId}", cancellationToken), cancellationToken);

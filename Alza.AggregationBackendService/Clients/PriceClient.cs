@@ -10,8 +10,8 @@ public interface IPricingClient
     Task<ProductPrice> GetProductPriceAsync(Guid productId, CancellationToken cancellationToken);
 }
 
-public sealed class PricingClient(HttpClient httpClient, IOptions<PricingClientOptions> clientOps)
-    : ResilientHttpClientBase(httpClient, clientOps.Value.HttpRetryStrategy), IPricingClient
+public sealed class PricingClient(HttpClient httpClient, IOptions<PricingClientOptions> clientOps, ILogger<PricingClient> logger)
+    : ResilientHttpClientBase(httpClient, logger, clientOps.Value.HttpRetryStrategy), IPricingClient
 {
     public Task<ProductPrice> GetProductPriceAsync(Guid productId, CancellationToken cancellationToken)
         => ExecuteRetryStrategy(client => client.UserFriendlyGetObjectAsync<ProductPrice>($"/ProductPrice/{productId}", cancellationToken), cancellationToken);

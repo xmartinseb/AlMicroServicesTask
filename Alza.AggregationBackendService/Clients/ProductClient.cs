@@ -10,8 +10,8 @@ public interface IProductClient
     Task<Product> GetProductAsync(Guid productId, CancellationToken cancellationToken);
 }
 
-public sealed class ProductClient(HttpClient httpClient, IOptions<ProductClientOptions> clientOps)
-    : ResilientHttpClientBase(httpClient, clientOps.Value.HttpRetryStrategy), IProductClient
+public sealed class ProductClient(HttpClient httpClient, IOptions<ProductClientOptions> clientOps, ILogger<ProductClient> logger)
+    : ResilientHttpClientBase(httpClient, logger, clientOps.Value.HttpRetryStrategy), IProductClient
 {
     public Task<Product> GetProductAsync(Guid productId, CancellationToken cancellationToken)
         => ExecuteRetryStrategy(client => client.UserFriendlyGetObjectAsync<Product>($"/Product/{productId}", cancellationToken), cancellationToken);
