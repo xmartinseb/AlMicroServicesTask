@@ -10,12 +10,11 @@ public interface IPricingClient
     Task<ProductPrice> GetProductPriceAsync(Guid productId, CancellationToken cancellationToken);
 }
 
-public sealed class PricingClient(HttpClient client) : IPricingClient
+public sealed class PricingClient(HttpClient httpClient, IOptions<PricingClientOptions> clientOps)
+    : ResilientHttpClientBase(httpClient, clientOps.Value.HttpRetryStrategy), IPricingClient
 {
-    public async Task<ProductPrice> GetProductPriceAsync(Guid productId, CancellationToken cancellationToken)
-    {
-        return await client.UserFriendlyGetObjectAsync<ProductPrice>($"/ProductPrice/{productId}", cancellationToken);
-    }
+    public Task<ProductPrice> GetProductPriceAsync(Guid productId, CancellationToken cancellationToken)
+        => ExecuteRetryStrategy(client => client.UserFriendlyGetObjectAsync<ProductPrice>($"/ProductPrice/{productId}", cancellationToken), cancellationToken);
 }
 
 public sealed record ProductPrice(Guid ProductId, double Price);
@@ -24,6 +23,7 @@ public class PricingClientOptions
 {
     public string BaseUrl { get; set; } = string.Empty;
     public TimeSpan CachedDataTTL { get; set; }
+    public HttpRetryStrategy HttpRetryStrategy { get; set; } = new();
 }
 
 public sealed class CachedPricingClient(IPricingClient pricingClient, IMemoryCache cache, IOptions<PricingClientOptions> options)

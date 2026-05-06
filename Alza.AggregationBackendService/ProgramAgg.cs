@@ -24,18 +24,21 @@ builder.Services.AddHttpClient<IProductClient, ProductClient>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<ProductClientOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
+    client.Timeout = options.HttpRetryStrategy.RequestTimeout;
 });
 
 builder.Services.AddHttpClient<IPricingClient, PricingClient>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<PricingClientOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
+    client.Timeout = options.HttpRetryStrategy.RequestTimeout;
 });
 
 builder.Services.AddHttpClient<IStockClient, StockClient>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<StockClientOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
+    client.Timeout = options.HttpRetryStrategy.RequestTimeout;
 });
 
 Serilog.Log.Logger = new LoggerConfiguration()

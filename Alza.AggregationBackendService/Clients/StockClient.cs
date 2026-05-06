@@ -10,12 +10,11 @@ public interface IStockClient
     Task<ProductAvailability> GetProductAvailabilityAsync(Guid productId, CancellationToken cancellationToken);
 }
 
-public sealed class StockClient(HttpClient client) : IStockClient
+public sealed class StockClient(HttpClient httpClient, IOptions<StockClientOptions> clientOps) 
+    : ResilientHttpClientBase(httpClient, clientOps.Value.HttpRetryStrategy), IStockClient
 {
-    public async Task<ProductAvailability> GetProductAvailabilityAsync(Guid productId, CancellationToken cancellationToken)
-    {
-        return await client.UserFriendlyGetObjectAsync<ProductAvailability>($"/ProductAvailability/{productId}", cancellationToken);
-    }
+    public Task<ProductAvailability> GetProductAvailabilityAsync(Guid productId, CancellationToken cancellationToken)
+        => ExecuteRetryStrategy(client => client.UserFriendlyGetObjectAsync<ProductAvailability>($"/ProductAvailability/{productId}", cancellationToken), cancellationToken);
 }
 
 public sealed record ProductAvailability(Guid ProductId, int Amount);
@@ -24,6 +23,7 @@ public class StockClientOptions
 {
     public string BaseUrl { get; set; } = string.Empty;
     public TimeSpan CachedDataTTL { get; set; }
+    public HttpRetryStrategy HttpRetryStrategy { get; set; } = new();
 }
 
 public sealed class CachedStockClient(IStockClient stockClient, IMemoryCache cache, IOptions<StockClientOptions> options)

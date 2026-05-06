@@ -10,12 +10,11 @@ public interface IProductClient
     Task<Product> GetProductAsync(Guid productId, CancellationToken cancellationToken);
 }
 
-public sealed class ProductClient(HttpClient client) : IProductClient
+public sealed class ProductClient(HttpClient httpClient, IOptions<ProductClientOptions> clientOps)
+    : ResilientHttpClientBase(httpClient, clientOps.Value.HttpRetryStrategy), IProductClient
 {
-    public async Task<Product> GetProductAsync(Guid productId, CancellationToken cancellationToken)
-    {
-        return await client.UserFriendlyGetObjectAsync<Product>($"/Product/{productId}", cancellationToken);
-    }
+    public Task<Product> GetProductAsync(Guid productId, CancellationToken cancellationToken)
+        => ExecuteRetryStrategy(client => client.UserFriendlyGetObjectAsync<Product>($"/Product/{productId}", cancellationToken), cancellationToken);
 }
 
 public sealed record Product(Guid Id, string ImageUrl, string Name);
@@ -23,6 +22,7 @@ public class ProductClientOptions
 {
     public string BaseUrl { get; set; } = string.Empty;
     public TimeSpan CachedDataTTL { get; set; }
+    public HttpRetryStrategy HttpRetryStrategy { get; set; } = new();
 }
 
 public sealed class CachedProductClient(IProductClient productClient, IMemoryCache cache, IOptions<ProductClientOptions> options)
