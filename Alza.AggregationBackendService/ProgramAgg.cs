@@ -1,11 +1,13 @@
 using Alza.AggregationBackendService.Clients;
 using Alza.HttpExtensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Context;
 using System.Text;
+using System.Threading.RateLimiting;
 
 const string KEY = "super_secret_dev_key_12345"; // pouze pro demo
 
@@ -44,6 +46,18 @@ builder.Services.AddHttpClient<IStockClient, StockClient>((sp, client) =>
     client.BaseAddress = new Uri(options.BaseUrl);
     client.Timeout = options.HttpRetryStrategy.RequestTimeout;
 }).AddHttpMessageHandler<CorrelationIdHandler>();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("default", httpContext =>
+    RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.User.Identity?.Name ?? httpContext.Connection.RemoteIpAddress?.ToString(),
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromSeconds(10)
+        }));
+});
 
 builder.Host.UseSerilog((ctx, lc) => lc.ReadFrom.Configuration(ctx.Configuration));
 
@@ -137,6 +151,7 @@ app.Use(async (context, next) =>
         await next();
     }
 });
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

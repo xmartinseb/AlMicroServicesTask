@@ -2,12 +2,14 @@ using Alza.AggregationBackendService.Clients;
 using Alza.AggregationBackendService.Models;
 using Alza.HttpExtensions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Alza.AggregationBackendService.Controllers;
 
 [ApiController]
 [Route("[controller]")]
 //[Authorize]
+[EnableRateLimiting("default")]
 public sealed class ProductAggregatedInfoController(
     CachedProductClient cachedProductClient, CachedPricingClient cachedPricingClient, CachedStockClient cachedStockClient,
     ILogger<ProductAggregatedInfoController> logger) : ControllerBase
