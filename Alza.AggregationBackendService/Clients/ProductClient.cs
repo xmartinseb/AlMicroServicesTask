@@ -29,6 +29,8 @@ public sealed class CachedProductClient(IProductClient productClient, IMemoryCac
     : CachedClientBase<Product>(cache, options.Value.CachedDataTTL)
 
 {
+    protected override string CacheKeyPrefix => nameof(Product);
+
     protected override Task<Product> GetDataFromExternalServiceAsync(Guid objectId, CancellationToken cancellationToken)
         => productClient.GetProductAsync(objectId, cancellationToken);
 }

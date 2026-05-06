@@ -30,6 +30,8 @@ public sealed class CachedStockClient(IStockClient stockClient, IMemoryCache cac
     : CachedClientBase<ProductAvailability>(cache, options.Value.CachedDataTTL)
 
 {
+    protected override string CacheKeyPrefix => nameof(ProductAvailability);
+
     protected override Task<ProductAvailability> GetDataFromExternalServiceAsync(Guid objectId, CancellationToken cancellationToken)
         => stockClient.GetProductAvailabilityAsync(objectId, cancellationToken);
 }

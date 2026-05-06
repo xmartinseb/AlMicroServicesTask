@@ -60,6 +60,8 @@ public sealed class CachedPricingClient(IPricingClient pricingClient, IMemoryCac
     : CachedClientBase<ProductPrice>(cache, options.Value.CachedDataTTL)
 
 {
+    protected override string CacheKeyPrefix => nameof(ProductPrice);
+
     protected override Task<ProductPrice> GetDataFromExternalServiceAsync(Guid objectId, CancellationToken cancellationToken)
         => pricingClient.GetProductPriceAsync(objectId, cancellationToken);
 }
