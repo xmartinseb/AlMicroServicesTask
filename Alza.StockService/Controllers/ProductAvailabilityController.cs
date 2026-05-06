@@ -18,8 +18,9 @@ public class ProductAvailabilityController(IStockDb db, IMemoryCache cache, IOpt
         {
             var productAvail = await db.GetProductAvailabilityAsync(productId, cancellationToken);
             var ttl = cacheConfig.Value.DataTTL;
-            logger.LogInformation("Product availability for {ProductId} retrieved from db: {}", productId, productAvail.Amount);
+            logger.LogInformation("New cache entry: Product availability of the product {ProductId} = {Amount}; TTL={ttl}", productId, productAvail.Amount, ttl);
             entry.AbsoluteExpirationRelativeToNow = ttl;
+            entry.Size = 1;
             return productAvail;
         }))!;
 }

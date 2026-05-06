@@ -18,8 +18,9 @@ public class ProductPriceController(IPricingDb db, IMemoryCache cache, IOptions<
         {
             var productPrice = await db.GetProductPriceAsync(productId, cancellationToken);
             var ttl = cacheConfig.Value.DataTTL;
-            logger.LogInformation("Price of product {product} retrieved from db ({price})", productId, productPrice.Price);
+            logger.LogInformation("New cache entry: Price of the product {product} = {price}; TTL={ttl}", productId, productPrice.Price, ttl);
             entry.AbsoluteExpirationRelativeToNow = ttl;
+            entry.Size = 1;
             return productPrice;
         }))!;
 }

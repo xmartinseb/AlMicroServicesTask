@@ -2,5 +2,5 @@
 
 public sealed class CacheOptions
 {
-    public TimeSpan DataTTL { get; init; }
+    public TimeSpan DataTTL { get; init; } = TimeSpan.FromMinutes(1);
 }

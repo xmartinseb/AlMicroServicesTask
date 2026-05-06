@@ -18,8 +18,9 @@ public class ProductController(IProductDb db, IMemoryCache cache, IOptions<Cache
         {
             var product = await db.GetProductAsync(productId, cancellationToken);
             var ttl = cacheConfig.Value.DataTTL;
-            logger.LogInformation("New cache entry of type Product; Id={productId}, name = {productName}, TTL={ttl}", product.Id, product.Name, ttl);
+            logger.LogInformation("New cache entry:  ProductId={productId}, name = {productName}, TTL={ttl}", product.Id, product.Name, ttl);
             entry.AbsoluteExpirationRelativeToNow = ttl;
+            entry.Size = 1;
             return product;
         }))!;
 }

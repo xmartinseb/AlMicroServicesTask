@@ -11,7 +11,11 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IPricingDb, PseudoPricingDb>();
 builder.Services.AddEndpointsApiExplorer(); // TODO: k cemu je toto
 builder.Services.AddSwaggerGen();
-builder.Services.AddMemoryCache();
+builder.Services.AddMemoryCache(options =>
+{
+    options.SizeLimit = 256000; // Note: Max amount of items
+    options.ExpirationScanFrequency = TimeSpan.FromMinutes(10);
+});
 builder.Services.Configure<CacheOptions>(builder.Configuration.GetSection("Cache"));
 
 builder.Host.UseSerilog((ctx, lc) => lc.ReadFrom.Configuration(ctx.Configuration));
