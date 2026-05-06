@@ -1,6 +1,7 @@
 ﻿using Alza.AggregationBackendService.Clients.Cached;
 using Alza.HttpExtensions;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace Alza.AggregationBackendService.Clients;
 
@@ -25,8 +26,8 @@ public class StockClientOptions
     public TimeSpan CachedDataTTL { get; set; }
 }
 
-public sealed class CachedStockClient(IStockClient stockClient, IMemoryCache cache, StockClientOptions options)
-    : CachedClientBase<ProductAvailability>(cache, options.CachedDataTTL)
+public sealed class CachedStockClient(IStockClient stockClient, IMemoryCache cache, IOptions<StockClientOptions> options)
+    : CachedClientBase<ProductAvailability>(cache, options.Value.CachedDataTTL)
 
 {
     protected override Task<ProductAvailability> GetDataFromExternalServiceAsync(Guid objectId, CancellationToken cancellationToken)
