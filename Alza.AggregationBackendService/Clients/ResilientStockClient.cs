@@ -10,7 +10,7 @@ public interface IStockClient
     Task<ProductAvailability> GetProductAvailabilityAsync(Guid productId, CancellationToken cancellationToken);
 }
 
-public sealed class StockClient(HttpClient httpClient, IOptions<StockClientOptions> clientOps, ILogger<StockClient> logger) 
+public sealed class ResilientStockClient(HttpClient httpClient, IOptions<StockClientOptions> clientOps, ILogger<ResilientStockClient> logger) 
     : ResilientHttpClientBase(httpClient, logger, clientOps.Value.HttpRetryStrategy), IStockClient
 {
     public Task<ProductAvailability> GetProductAvailabilityAsync(Guid productId, CancellationToken cancellationToken)

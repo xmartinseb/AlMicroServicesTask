@@ -1,7 +1,6 @@
 using Alza.AggregationBackendService.Clients;
 using Alza.HttpExtensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -26,21 +25,21 @@ builder.Services.Configure<ProductClientOptions>(builder.Configuration.GetSectio
 builder.Services.Configure<PricingClientOptions>(builder.Configuration.GetSection("Clients:PricingClient"));
 builder.Services.Configure<StockClientOptions>(builder.Configuration.GetSection("Clients:StockClient"));
 
-builder.Services.AddHttpClient<IProductClient, ProductClient>((sp, client) =>
+builder.Services.AddHttpClient<IProductClient, ResilientProductClient>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<ProductClientOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
     client.Timeout = options.HttpRetryStrategy.RequestTimeout;
 }).AddHttpMessageHandler<CorrelationIdHandler>();
 
-builder.Services.AddHttpClient<IPricingClient, PricingClient>((sp, client) =>
+builder.Services.AddHttpClient<IPricingClient, ResilientPricingClient>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<PricingClientOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
     client.Timeout = options.HttpRetryStrategy.RequestTimeout;
 }).AddHttpMessageHandler<CorrelationIdHandler>();
 
-builder.Services.AddHttpClient<IStockClient, StockClient>((sp, client) =>
+builder.Services.AddHttpClient<IStockClient, ResilientStockClient>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<StockClientOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
