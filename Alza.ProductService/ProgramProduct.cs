@@ -1,5 +1,6 @@
 using Alza.ProductService.Config;
 using Alza.ProductService.Data;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,12 @@ builder.Services.AddEndpointsApiExplorer(); // TODO: k cemu je toto
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 builder.Services.Configure<CacheOptions>(builder.Configuration.GetSection("Cache"));
+
+Serilog.Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+builder.Host.UseSerilog();
 
 var app = builder.Build();
 // Configure the HTTP request pipeline.
