@@ -1,8 +1,10 @@
 using Alza.AggregationBackendService.Clients;
+using Alza.HttpExtensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Serilog.Context;
 using System.Text;
 
 const string KEY = "super_secret_dev_key_12345"; // pouze pro demo
@@ -15,6 +17,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer(); // TODO: k cemu je toto
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<CorrelationIdHandler>();
 
 builder.Services.Configure<ProductClientOptions>(builder.Configuration.GetSection("Clients:ProductClient"));
 builder.Services.Configure<PricingClientOptions>(builder.Configuration.GetSection("Clients:PricingClient"));
@@ -25,21 +29,21 @@ builder.Services.AddHttpClient<IProductClient, ProductClient>((sp, client) =>
     var options = sp.GetRequiredService<IOptions<ProductClientOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
     client.Timeout = options.HttpRetryStrategy.RequestTimeout;
-});
+}).AddHttpMessageHandler<CorrelationIdHandler>();
 
 builder.Services.AddHttpClient<IPricingClient, PricingClient>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<PricingClientOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
     client.Timeout = options.HttpRetryStrategy.RequestTimeout;
-});
+}).AddHttpMessageHandler<CorrelationIdHandler>();
 
 builder.Services.AddHttpClient<IStockClient, StockClient>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<StockClientOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
     client.Timeout = options.HttpRetryStrategy.RequestTimeout;
-});
+}).AddHttpMessageHandler<CorrelationIdHandler>();
 
 builder.Host.UseSerilog((ctx, lc) => lc.ReadFrom.Configuration(ctx.Configuration));
 
@@ -115,6 +119,24 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.Use(async (context, next) =>
+{
+    const string headerName = "X-Correlation-ID";
+
+    var correlationId =
+        context.Request.Headers[headerName].FirstOrDefault()
+        ?? Guid.NewGuid().ToString();
+    Console.WriteLine($"Correlation ID = {correlationId}");
+
+    // přidej do response (debugging)
+    context.Request.Headers[headerName] = correlationId;
+    context.Response.Headers[headerName] = correlationId;
+
+    using (LogContext.PushProperty("CorrelationId", correlationId))
+    {
+        await next();
+    }
+});
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
