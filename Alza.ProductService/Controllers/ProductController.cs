@@ -9,11 +9,11 @@ namespace Alza.ProductService.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class ProductController(IProductDb db, IMemoryCache cache, IOptions<CacheOptions> cacheConfig, 
+public class ProductController(IProductDb db, IMemoryCache cache, IOptions<CacheOptions> cacheConfig,
     ILogger<ProductController> logger) : ControllerBase
 {
     [HttpGet("{productId}")]
-    public async Task<Product> Get(Guid productId, CancellationToken cancellationToken)
+    public async Task<ActionResult<Product>> Get(Guid productId, CancellationToken cancellationToken)
         => (await cache.GetOrCreateAsync(productId.ToString(), async entry =>
         {
             var product = await db.GetProductAsync(productId, cancellationToken);
@@ -23,4 +23,5 @@ public class ProductController(IProductDb db, IMemoryCache cache, IOptions<Cache
             entry.Size = 1;
             return product;
         }))!;
+
 }

@@ -13,7 +13,7 @@ public class ProductAvailabilityController(IStockDb db, IMemoryCache cache, IOpt
     ILogger<ProductAvailabilityController> logger) : ControllerBase
 {
     [HttpGet("{productId}")]
-    public async Task<ProductAvailability> Get(Guid productId, CancellationToken cancellationToken)
+    public async Task<ActionResult<ProductAvailability>> Get(Guid productId, CancellationToken cancellationToken)
         => (await cache.GetOrCreateAsync(productId.ToString(), async entry =>
         {
             var productAvail = await db.GetProductAvailabilityAsync(productId, cancellationToken);
