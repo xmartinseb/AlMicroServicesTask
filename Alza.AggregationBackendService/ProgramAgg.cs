@@ -41,11 +41,7 @@ builder.Services.AddHttpClient<IStockClient, StockClient>((sp, client) =>
     client.Timeout = options.HttpRetryStrategy.RequestTimeout;
 });
 
-Serilog.Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day)
-    .CreateLogger();
-builder.Host.UseSerilog();
+builder.Host.UseSerilog((ctx, lc) => lc.ReadFrom.Configuration(ctx.Configuration));
 
 builder.Services.AddScoped<CachedProductClient>();
 builder.Services.AddScoped<CachedPricingClient>();
