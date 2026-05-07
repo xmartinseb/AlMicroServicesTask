@@ -1,6 +1,7 @@
 using Alza.AggregationBackendService;
 using Alza.AggregationBackendService.Clients;
 using Alza.HttpExtensions;
+using Caches;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -51,7 +52,13 @@ builder.Services.AddSwaggerGen(options =>
     //    }
     //});
 });
-builder.Services.AddMemoryCache();
+
+builder.Services.AddMemoryCache(options =>
+{
+    options.SizeLimit = 256000; // Note: Max amount of items
+    options.ExpirationScanFrequency = TimeSpan.FromMinutes(10);
+});
+builder.Services.AddSingleton<InMemoryCacheWithSemaphores>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<CorrelationIdHandler>();
 builder.Services.AddScoped<IProductAggregatedInfoService, ProductAggregatedInfoService>();

@@ -1,6 +1,6 @@
 ﻿using Alza.AggregationBackendService.Clients.Cached;
 using Alza.HttpExtensions;
-using Microsoft.Extensions.Caching.Memory;
+using Caches;
 using Microsoft.Extensions.Options;
 
 namespace Alza.AggregationBackendService.Clients;
@@ -56,7 +56,7 @@ public class PricingClientOptions
 /// Adds a in-memory cache layer on top of the pricing client.
 /// It uses singleton cache.
 /// </summary>
-public sealed class CachedPricingClient(IPricingClient pricingClient, IMemoryCache cache, IOptions<PricingClientOptions> options)
+public sealed class CachedPricingClient(IPricingClient pricingClient, InMemoryCacheWithSemaphores cache, IOptions<PricingClientOptions> options)
     : CachedClientBase<ProductPrice>(cache, options.Value.CachedDataTTL)
 
 {

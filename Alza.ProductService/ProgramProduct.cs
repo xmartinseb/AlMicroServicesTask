@@ -1,6 +1,6 @@
 using Alza.ProductService.Config;
 using Alza.ProductService.Data;
-using Microsoft.Extensions.Caching.Memory;
+using Caches;
 using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Context;
@@ -27,6 +27,7 @@ builder.Services.AddMemoryCache(options =>
     options.SizeLimit = 256000; // Note: Max amount of items
     options.ExpirationScanFrequency = TimeSpan.FromMinutes(10);
 });
+builder.Services.AddSingleton<InMemoryCacheWithSemaphores>();
 
 builder.Host.UseSerilog((ctx, lc) => lc.ReadFrom.Configuration(ctx.Configuration));
 

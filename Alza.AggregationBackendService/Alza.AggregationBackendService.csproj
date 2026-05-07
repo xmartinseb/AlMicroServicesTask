@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Alza.HttpExtensions\Alza.HttpExtensions.csproj" />
+    <ProjectReference Include="..\Caches\Caches.csproj" />
   </ItemGroup>
 
   <ItemGroup>

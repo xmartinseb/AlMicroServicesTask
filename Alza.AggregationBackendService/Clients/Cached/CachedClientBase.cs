@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using Caches;
 
 namespace Alza.AggregationBackendService.Clients.Cached;
 
@@ -7,16 +7,14 @@ namespace Alza.AggregationBackendService.Clients.Cached;
 /// This mechanism improves the latency.
 /// </summary>
 /// <typeparam name="TEntry">Entity type that is being loaded from the cache or from the microservice</typeparam>
-public abstract class CachedClientBase<TEntry>(IMemoryCache cache, TimeSpan cacheEntriesTTL)
+public abstract class CachedClientBase<TEntry>(InMemoryCacheWithSemaphores cache, TimeSpan cacheEntriesTTL)
     where TEntry : class
 {
     protected abstract string CacheKeyPrefix { get; }
     protected abstract Task<TEntry> GetDataFromExternalServiceAsync(Guid objectId, CancellationToken cancellationToken);
 
     public async Task<TEntry> GetObjectAsync(Guid objectId, CancellationToken cancellationToken)
-        => (await cache.GetOrCreateAsync($"{CacheKeyPrefix}:{objectId}", async entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow = cacheEntriesTTL;
-            return await GetDataFromExternalServiceAsync(objectId, cancellationToken);
-        }))!;
+        => await cache.GetObjectAsync($"{CacheKeyPrefix}:{objectId}", 
+            cancellation => GetDataFromExternalServiceAsync(objectId, cancellation), 
+            cacheEntriesTTL, cancellationToken);
 }

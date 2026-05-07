@@ -1,6 +1,6 @@
 ﻿using Alza.AggregationBackendService.Clients.Cached;
 using Alza.HttpExtensions;
-using Microsoft.Extensions.Caching.Memory;
+using Caches;
 using Microsoft.Extensions.Options;
 
 namespace Alza.AggregationBackendService.Clients;
@@ -25,7 +25,7 @@ public class ProductClientOptions
     public HttpRetryStrategy HttpRetryStrategy { get; set; } = new();
 }
 
-public sealed class CachedProductClient(IProductClient productClient, IMemoryCache cache, IOptions<ProductClientOptions> options)
+public sealed class CachedProductClient(IProductClient productClient, InMemoryCacheWithSemaphores cache, IOptions<ProductClientOptions> options)
     : CachedClientBase<Product>(cache, options.Value.CachedDataTTL)
 
 {

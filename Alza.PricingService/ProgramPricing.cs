@@ -1,5 +1,6 @@
 using Alza.PricingService.Config;
 using Alza.PricingService.Data;
+using Caches;
 using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Context;
@@ -26,6 +27,7 @@ builder.Services.AddMemoryCache(options =>
     options.ExpirationScanFrequency = TimeSpan.FromMinutes(10);
 });
 builder.Services.Configure<CacheOptions>(builder.Configuration.GetSection("Cache"));
+builder.Services.AddSingleton<InMemoryCacheWithSemaphores>();
 
 builder.Host.UseSerilog((ctx, lc) => lc.ReadFrom.Configuration(ctx.Configuration));
 
