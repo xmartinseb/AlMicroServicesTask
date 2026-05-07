@@ -1,5 +1,6 @@
 using Alza.AggregationBackendService;
 using Alza.AggregationBackendService.Clients;
+using Alza.AggregationBackendService.Controllers;
 using Alza.HttpExtensions;
 using Caches;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -9,9 +10,10 @@ using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Context;
 using System.Text;
+using Swashbuckle.AspNetCore;
 using System.Threading.RateLimiting;
 
-const string KEY = "super_secret_dev_key_12345"; // pouze pro demo
+const string KEY = DevAuthController.KEY; // pouze pro demo
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,7 +39,20 @@ builder.Services.AddSwaggerGen(options =>
         In = ParameterLocation.Header
     });
 
-    //    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("bearer", document)] = []
+    });
+
+    //options.AddSecurityRequirement(openApiDocument => new Microsoft.OpenApi.OpenApiSecurityRequirement
+    //{
+    //    {
+    //        new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer", openApiDocument),
+    //        new List<string>()
+    //    }
+    //});
+
+    //options.AddSecurityRequirement(openApiDoc => new OpenApiSecurityRequirement
     //{
     //    {
     //        new OpenApiSecurityScheme
@@ -53,6 +68,14 @@ builder.Services.AddSwaggerGen(options =>
     //});
 });
 
+//{
+//    //Reference = new OpenApiReference
+//    //{
+//    //    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+//    //    Id = "Bearer"
+//    //}
+//},
+
 builder.Services.AddMemoryCache(options =>
 {
     options.SizeLimit = 256000; // Note: Max amount of items
@@ -61,6 +84,7 @@ builder.Services.AddMemoryCache(options =>
 builder.Services.AddSingleton<InMemoryCacheWithSemaphores>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<CorrelationIdHandler>();
+builder.Services.AddTransient<AuthForwardingHandler>();
 builder.Services.AddScoped<IProductAggregatedInfoService, ProductAggregatedInfoService>();
 
 builder.Services.Configure<ProductClientOptions>(builder.Configuration.GetSection("Clients:ProductClient"));
@@ -72,21 +96,27 @@ builder.Services.AddHttpClient<IProductClient, ResilientProductClient>((sp, clie
     var options = sp.GetRequiredService<IOptions<ProductClientOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
     client.Timeout = options.HttpRetryStrategy.RequestTimeout;
-}).AddHttpMessageHandler<CorrelationIdHandler>();
+})
+    .AddHttpMessageHandler<CorrelationIdHandler>()
+    .AddHttpMessageHandler<AuthForwardingHandler>();
 
 builder.Services.AddHttpClient<IPricingClient, ResilientPricingClient>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<PricingClientOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
     client.Timeout = options.HttpRetryStrategy.RequestTimeout;
-}).AddHttpMessageHandler<CorrelationIdHandler>();
+})
+    .AddHttpMessageHandler<CorrelationIdHandler>()
+    .AddHttpMessageHandler<AuthForwardingHandler>();
 
 builder.Services.AddHttpClient<IStockClient, ResilientStockClient>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<StockClientOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
     client.Timeout = options.HttpRetryStrategy.RequestTimeout;
-}).AddHttpMessageHandler<CorrelationIdHandler>();
+})
+    .AddHttpMessageHandler<CorrelationIdHandler>()
+    .AddHttpMessageHandler<AuthForwardingHandler>();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -106,59 +136,14 @@ builder.Services.AddScoped<CachedProductClient>();
 builder.Services.AddScoped<CachedPricingClient>();
 builder.Services.AddScoped<CachedStockClient>();
 
-
-//builder.Services.AddSwaggerGen(options =>
-//{
-//    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-//    {
-//        Name = "Authorization",
-//        Type = SecuritySchemeType.Http,
-//        Scheme = "bearer",
-//        BearerFormat = "JWT",
-//        In = ParameterLocation.Header,
-//        Description = "Enter JWT token"
-//    });
-
-//    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-//    {
-//        {
-//            new OpenApiSecurityScheme
-//            {
-//                Reference = new Microsoft.OpenApi.Models.OpenApiReference
-//                {
-//                    Type = ReferenceType.SecurityScheme,
-//                    Id = "Bearer"
-//                }
-//            },
-//            Array.Empty<string>()
-//        }
-//    });
-//});
-
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-//builder.Services.AddOpenApi();
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+builder.Services
+    .AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
     {
-        options.RequireHttpsMetadata = false;
-
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = "demo-auth-server",
-
-            ValidateAudience = true,
-            ValidAudience = "alza-api",
-
-            ValidateLifetime = true,
-
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(KEY))
-        };
+        options.Authority = "https://your-idp"; // Keycloak / Entra / Auth0
+        options.Audience = "aggregation-api";   // nebo shared audience
+        options.RequireHttpsMetadata = true;
     });
-
 builder.Services.AddAuthorization();
 
 //Debug.WriteLine("VALID OAUTH TOKEN: {0}", TokenGenerator.Generate(KEY));
