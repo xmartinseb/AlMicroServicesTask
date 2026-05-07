@@ -4,6 +4,10 @@ using System.Net;
 
 namespace Alza.AggregationBackendService.Clients;
 
+/// <summary>
+/// Defines base retry logic for all HTTP clients. (max attempts, single request timeout, exponential backoff, etc.)
+/// It detects transient errors (timeouts, HTTP 5xx, HTTP 429) and retries the request according to the strategy.
+/// </summary>
 public abstract class ResilientHttpClientBase
 {
     private readonly HttpRetryStrategy httpRetryStrategy;
@@ -67,6 +71,12 @@ public abstract class ResilientHttpClientBase
     private static TimeSpan GetBackoffOrJitterDelay(ExponentialBackoff? backoff)
         => backoff?.GetNextDelay() ?? TimeSpan.FromMilliseconds(Random.Shared.Next(100, 500));
 
+    /// <summary>
+    /// Determines whether the specified HTTP status code represents a transient error that may succeed if retried.
+    /// </summary>
+    /// <remarks>
+    /// Transient errors are typically temporary conditions such as timeouts or server
+    /// </remarks>
     private static bool IsErrorTransient(HttpStatusCode statusCode)
     => statusCode is HttpStatusCode.RequestTimeout
         or HttpStatusCode.InternalServerError
@@ -77,11 +87,16 @@ public abstract class ResilientHttpClientBase
 
     sealed class ExponentialBackoff
     {
+        private static readonly TimeSpan MaxDelay = TimeSpan.FromMinutes(2);
+
         private TimeSpan delay = TimeSpan.FromMilliseconds(500);
         public TimeSpan GetNextDelay()
         {
             delay *= 2;
-            return delay + GetRandomJitter();
+            var delayWithJitter = delay + GetRandomJitter();
+            return delayWithJitter > MaxDelay 
+                ? MaxDelay 
+                : delayWithJitter;
         }
 
         private static TimeSpan GetRandomJitter()
