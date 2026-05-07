@@ -13,6 +13,7 @@ public class ProductController(IProductDb db, IMemoryCache cache, IOptions<Cache
     ILogger<ProductController> logger) : ControllerBase
 {
     [HttpGet("{productId}")]
+    [ProducesResponseType(typeof(Product), 200)]
     public async Task<ActionResult<Product>> Get(Guid productId, CancellationToken cancellationToken)
         => (await cache.GetOrCreateAsync(productId.ToString(), async entry =>
         {

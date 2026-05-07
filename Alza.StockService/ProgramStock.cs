@@ -1,5 +1,6 @@
 using Alza.StockService.Config;
 using Alza.StockService.Data;
+using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Context;
 
@@ -10,7 +11,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddScoped<IStockDb, PseudoStockDb>();
 builder.Services.AddEndpointsApiExplorer(); // TODO: k cemu je toto
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Stock microservice API",
+        Version = "v1",
+        Description = "Provides information about product availability. It it used by the aggregation service"
+    });
+});
+
 builder.Services.AddMemoryCache(options =>
 {
     options.SizeLimit = 256000; // Note: Max amount of items

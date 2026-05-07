@@ -1,5 +1,6 @@
 using Alza.PricingService.Config;
 using Alza.PricingService.Data;
+using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Context;
 
@@ -10,7 +11,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddScoped<IPricingDb, PseudoPricingDb>();
 builder.Services.AddEndpointsApiExplorer(); // TODO: k cemu je toto
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Pricing microservice API",
+        Version = "v1",
+        Description = "Provides information about product price. It it used by the aggregation service"
+    });
+});
 builder.Services.AddMemoryCache(options =>
 {
     options.SizeLimit = 256000; // Note: Max amount of items

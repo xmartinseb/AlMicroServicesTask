@@ -1,6 +1,7 @@
 using Alza.ProductService.Config;
 using Alza.ProductService.Data;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Context;
 
@@ -11,7 +12,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddScoped<IProductDb, PseudoProductDb>();
 builder.Services.AddEndpointsApiExplorer(); // TODO: k cemu je toto
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Product microservice API",
+        Version = "v1",
+        Description = "Provides details about products. It it used by the aggregation service"
+    });
+});
 builder.Services.Configure<CacheOptions>(builder.Configuration.GetSection("Cache"));
 builder.Services.AddMemoryCache(options =>
 {
