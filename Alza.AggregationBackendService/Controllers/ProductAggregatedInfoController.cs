@@ -1,4 +1,3 @@
-using Alza.AggregationBackendService.Clients;
 using Alza.AggregationBackendService.Models;
 using Alza.HttpExtensions;
 using Microsoft.AspNetCore.Mvc;
@@ -11,9 +10,8 @@ namespace Alza.AggregationBackendService.Controllers;
 [Route("[controller]")]
 //[Authorize]
 [EnableRateLimiting("default")]
-public sealed class ProductAggregatedInfoController(
-    CachedProductClient cachedProductClient, CachedPricingClient cachedPricingClient, CachedStockClient cachedStockClient,
-    ILogger<ProductAggregatedInfoController> logger) : ControllerBase
+public sealed class ProductAggregatedInfoController(IProductAggregatedInfoService productAggregationService, ILogger<ProductAggregatedInfoController> logger) 
+    : ControllerBase
 {
     /// <summary>
     /// Retrieves aggregated product information, including details, pricing, and availability, for the specified
@@ -30,80 +28,17 @@ public sealed class ProductAggregatedInfoController(
     [ProducesResponseType((int)HttpStatusCode.RequestTimeout)]
     public async Task<ActionResult<ProductAggregaredInfo>> Get(Guid productId, CancellationToken cancellationToken)
     {
-        // TODO: neexistujici produkt by mel vratit 404
-        var getProductTask = cachedProductClient.GetObjectAsync(productId, cancellationToken);
-        var getPriceTask = cachedPricingClient.GetObjectAsync(productId, cancellationToken);
-        var getAvailabilityTask = cachedStockClient.GetObjectAsync(productId, cancellationToken);
-
-        var microservicesErrors = new List<SharedErrorModel>();
-
-        // Product service is critical for the response, if we can't get product details, we consider the whole request failed.
-        Product product;
         try
         {
-            product = await GetResultOrWarning(getProductTask, microservicesErrors, "Product service", "PRODUCT_SERVICE_ERROR", rethwow: true);
+            return await productAggregationService.GetAggregatedProductInfoAsync(productId, cancellationToken);
         }
-        catch (ExternalServiceHttpException ex)
-        {
-            return StatusCode((int)(ex.StatusCode ?? HttpStatusCode.InternalServerError));
-        }
-        catch (ExternalServiceTimeoutException ex)
+        catch (ExternalServiceTimeoutException)
         {
             return StatusCode((int)HttpStatusCode.RequestTimeout);
         }
-        catch (OperationCanceledException ex)
-        {
-            throw;
-        }
-        catch (Exception)
+        catch (ExternalServiceException)
         {
             return StatusCode((int)HttpStatusCode.InternalServerError);
         }
-
-        var price = await GetResultOrWarning(getPriceTask, microservicesErrors, "Pricing service", "PRICING_SERVICE_ERROR");
-        var availability = await GetResultOrWarning(getAvailabilityTask, microservicesErrors, "Stock service", "STOCK_SERVICE_ERROR");
-
-        return new ProductAggregaredInfo(productId, product?.Name, product?.ImageUrl, price?.Price, availability?.Amount, microservicesErrors);
-    }
-
-    async Task<T?> GetResultOrWarning<T>(Task<T> loadingFromCachedClientTask, List<SharedErrorModel> outputWarnings, string serviceName, string serviceErrorCode, bool rethwow = false)
-        where T : class
-    {
-        try
-        {
-            return await loadingFromCachedClientTask;
-        }
-        catch (ExternalServiceHttpException ex)
-        {
-            logger.LogWarning(ex, "{Service} returned HTTP error {StatusCode}", serviceName, ex.StatusCode);
-            if (rethwow) throw;
-            outputWarnings.Add(new SharedErrorModel(serviceErrorCode, $"{serviceName} returned a http error state: {ex.StatusCode}"));
-        }
-        catch (ExternalServiceTimeoutException ex)
-        {
-            logger.LogWarning(ex, "{Service} timeout", serviceName);
-            if (rethwow) throw;
-            outputWarnings.Add(new SharedErrorModel(serviceErrorCode, $"{serviceName} timeout"));
-        }
-        catch (ExternalServiceException ex)
-        {
-            logger.LogError(ex, "{Service} failed", serviceName);
-            if (rethwow) throw;
-            outputWarnings.Add(new SharedErrorModel(serviceErrorCode, $"{serviceName} failed: {ex.Message}"));
-        }
-        catch (OperationCanceledException ex)
-        {
-            logger.LogInformation(ex, "Loading from cached {Service} has been canceled", serviceName);
-            if (rethwow) throw;
-            outputWarnings.Add(new SharedErrorModel(serviceErrorCode, $"Loading from {serviceName} has been canceled"));
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unexpected failure while loading data from cached {Service}", serviceName);
-            if (rethwow) throw;
-            outputWarnings.Add(new SharedErrorModel(serviceErrorCode, $"{serviceName} failed with an unexpected error"));
-        }
-
-        return null;
     }
 }

@@ -1,3 +1,4 @@
+using Alza.AggregationBackendService;
 using Alza.AggregationBackendService.Clients;
 using Alza.HttpExtensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -53,6 +54,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<CorrelationIdHandler>();
+builder.Services.AddScoped<IProductAggregatedInfoService, ProductAggregatedInfoService>();
 
 builder.Services.Configure<ProductClientOptions>(builder.Configuration.GetSection("Clients:ProductClient"));
 builder.Services.Configure<PricingClientOptions>(builder.Configuration.GetSection("Clients:PricingClient"));
