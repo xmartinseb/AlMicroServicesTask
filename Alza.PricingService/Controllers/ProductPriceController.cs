@@ -29,12 +29,14 @@ public class ProductPriceController(IPricingDb db, InMemoryCacheWithSemaphores c
         }
 
         await Task.Delay(TimeSpan.FromMilliseconds(Random.Shared.Next(500, 800)), cancellationToken);
-        return await cache.GetObjectAsync(productId.ToString(), async cancellationToken =>
+        var (productPrice, isCacheHit) = await cache.GetOrCreateObjectAsync(productId.ToString(), async cancellationToken =>
             {
                 var productPrice = await db.GetProductPriceAsync(productId, cancellationToken);
                 logger.LogInformation("New cache entry: Price of the product {product} = {price}; TTL={ttl}",
                     productId, productPrice.Price, cacheConfig.Value.DataTTL);
                 return productPrice;
             }, cacheConfig.Value.DataTTL, cancellationToken);
+
+        return productPrice;
     }
 }

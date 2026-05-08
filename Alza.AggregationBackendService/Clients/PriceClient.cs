@@ -2,6 +2,7 @@
 using Alza.HttpExtensions;
 using Caches;
 using Microsoft.Extensions.Options;
+using System.Diagnostics.Metrics;
 
 namespace Alza.AggregationBackendService.Clients;
 
@@ -64,4 +65,8 @@ public sealed class CachedPricingClient(IPricingClient pricingClient, InMemoryCa
 
     protected override Task<ProductPrice> GetDataFromExternalServiceAsync(Guid objectId, CancellationToken cancellationToken)
         => pricingClient.GetProductPriceAsync(objectId, cancellationToken);
+
+    protected override void AddLatencyMsToHistogram(int latencyMs) => serviceHttpLatencyHistogram.Record(latencyMs);
+
+    private static readonly Histogram<int> serviceHttpLatencyHistogram = HttpLatencyMeter.CreateHistogram<int>("pricing_service_latency");
 }

@@ -15,23 +15,23 @@ public class InMemoryCacheWithSemaphores(IMemoryCache cache)
 
     // Note: It'd be great to introduce some removing of used semaphores in real production code
 
-    public async Task<TEntry> GetObjectAsync<TEntry>(string cacheKey, Func<CancellationToken, Task<TEntry>> factory, TimeSpan ttl, CancellationToken cancellationToken)
+    public async Task<CacheLoadResult<TEntry>> GetOrCreateObjectAsync<TEntry>(string cacheKey, Func<CancellationToken, Task<TEntry>> factory, TimeSpan ttl, CancellationToken cancellationToken)
     {
         if (cache.TryGetValue(cacheKey, out TEntry? cached))
-            return cached!;
+            return new(cached!, true);
 
         var semaphore = Locks.GetOrAdd(cacheKey, _ => new SemaphoreSlim(1, 1));
         await semaphore.WaitAsync(cancellationToken);
-        
+
         try
         {
             // double-check after lock
             if (cache.TryGetValue(cacheKey, out cached))
-                return cached!;
+                return new(cached!, true);
 
-            var value = await factory(cancellationToken);
-            cache.Set(cacheKey, value, new MemoryCacheEntryOptions() { Size = 1, AbsoluteExpirationRelativeToNow = ttl });
-            return value;
+            var downloadedValue = await factory(cancellationToken);
+            cache.Set(cacheKey, downloadedValue, new MemoryCacheEntryOptions() { Size = 1, AbsoluteExpirationRelativeToNow = ttl });
+            return new(downloadedValue, false);
         }
         finally
         {
@@ -39,3 +39,5 @@ public class InMemoryCacheWithSemaphores(IMemoryCache cache)
         }
     }
 }
+
+public readonly record struct CacheLoadResult<TEntry>(TEntry Value, bool IsCacheHit);

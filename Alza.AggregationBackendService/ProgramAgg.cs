@@ -3,14 +3,11 @@ using Alza.AggregationBackendService.Clients;
 using Alza.AggregationBackendService.Controllers;
 using Alza.HttpExtensions;
 using Caches;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using OpenTelemetry.Metrics;
 using Serilog;
 using Serilog.Context;
-using System.Text;
-using Swashbuckle.AspNetCore;
 using System.Threading.RateLimiting;
 
 const string KEY = DevAuthController.KEY; // pouze pro demo
@@ -75,6 +72,18 @@ builder.Services.AddSwaggerGen(options =>
 //    //    Id = "Bearer"
 //    //}
 //},
+
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation()
+            .AddMeter("CacheHitMiss")
+            .AddMeter("DownstreamLatency")
+            .AddPrometheusExporter();
+    });
 
 builder.Services.AddMemoryCache(options =>
 {
@@ -180,6 +189,7 @@ app.Use(async (context, next) =>
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapPrometheusScrapingEndpoint();
 app.MapControllers();
 app.Run();
 

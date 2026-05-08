@@ -1,6 +1,5 @@
 using Alza.AggregationBackendService.Models;
 using Alza.HttpExtensions;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Net;
@@ -9,7 +8,7 @@ namespace Alza.AggregationBackendService.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-[Authorize]
+//[Authorize]
 [EnableRateLimiting("default")]
 public sealed class ProductAggregatedInfoController(IProductAggregatedInfoService productAggregationService, ILogger<ProductAggregatedInfoController> logger) 
     : ControllerBase
