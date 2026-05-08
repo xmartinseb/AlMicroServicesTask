@@ -37,6 +37,11 @@ public sealed class ProductAggregatedInfoService(ILogger<ProductAggregatedInfoSe
         {
             return await loadingFromCachedClientTask;
         }
+        catch (CircuitBreakerBlocksException ex)
+        {
+            logger.LogWarning(ex, "{Service} is blocked by circuit breaker due to recent failures", serviceName);
+            throw;
+        }
         catch (ExternalServiceHttpException ex)
         {
             logger.LogWarning(ex, "{Service} returned HTTP error {StatusCode}", serviceName, ex.StatusCode);
@@ -73,11 +78,15 @@ public sealed class ProductAggregatedInfoService(ILogger<ProductAggregatedInfoSe
         {
             return await GetResultOrThrowAsync(loadingFromCachedClientTask, serviceName);
         }
+        catch (CircuitBreakerBlocksException)
+        {
+            outputErrors.Add(new SharedErrorModel(serviceErrorCode, $"{serviceName} is unavailable. Try later!"));
+        }
         catch (ExternalServiceHttpException ex)
         {
             outputErrors.Add(new SharedErrorModel(serviceErrorCode, $"{serviceName} returned a http error state: {ex.StatusCode}"));
         }
-        catch (ExternalServiceTimeoutException ex)
+        catch (ExternalServiceTimeoutException)
         {
             outputErrors.Add(new SharedErrorModel(serviceErrorCode, $"{serviceName} timeout"));
         }
@@ -85,11 +94,11 @@ public sealed class ProductAggregatedInfoService(ILogger<ProductAggregatedInfoSe
         {
             outputErrors.Add(new SharedErrorModel(serviceErrorCode, $"{serviceName} failed: {ex.Message}"));
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException)
         {
             outputErrors.Add(new SharedErrorModel(serviceErrorCode, $"Loading from {serviceName} has been canceled"));
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             outputErrors.Add(new SharedErrorModel(serviceErrorCode, $"{serviceName} failed with an unexpected error"));
         }

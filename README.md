@@ -83,6 +83,9 @@ Even though it is an essential part of any solution, it also has its cons:
 
 ## What I intentionally simplified 
 - Metrics only for the aggregation service. I'd use them in every service if I had a real system
+- Circuit breaker: uses lock instead of some lock-free approaches
+- Every microservice has many special service types registered. There could be a nicer approach.
+- In real system, I'd introduce more microservice error states for API consumers
 
 ## Failure scenarios
 

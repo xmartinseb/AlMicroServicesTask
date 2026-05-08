@@ -35,26 +35,31 @@ public abstract class ResilientHttpClientBase
             {
                 return await circuitBreaker.TryExecuteHttpCallAsync(() => httpGetTask(client));
             }
-            catch (ExternalServiceTimeoutException)
+            catch (CircuitBreakerBlocksException ex)
             {
-                if (await Log_IsFinalAttempt(attempt, "Request timeout", statusCode: null))
+                logger.LogError(ex, "Service has been blocked by its circuit breaker due to recent failures");
+                throw;
+            }
+            catch (ExternalServiceTimeoutException ex)
+            {
+                if (await Log_IsFinalAttempt(ex, attempt, "Request timeout", statusCode: null))
                     throw;
             }
             catch (ExternalServiceHttpException ex) when (ex.StatusCode.HasValue && IsErrorTransient(ex.StatusCode.Value))
             {
-                if (await Log_IsFinalAttempt(attempt, "HTTP response error", ex.StatusCode.Value))
+                if (await Log_IsFinalAttempt(ex, attempt, "HTTP response error", ex.StatusCode.Value))
                     throw;
             }
         }
 
         throw new ExternalServiceException("Http retry strategy failed to retrieve data");
 
-        async Task<bool> Log_IsFinalAttempt(int attempt, string errorKind, HttpStatusCode? statusCode)
+        async Task<bool> Log_IsFinalAttempt(Exception ex, int attempt, string errorKind, HttpStatusCode? statusCode)
         {
             var isFinalAttempt = attempt + 1 >= httpRetryStrategy.MaxAttempts;
             var delay = isFinalAttempt ? TimeSpan.Zero : GetBackoffOrJitterDelay(backoff);
 
-            logger.LogWarning(
+            logger.LogWarning(ex,
                 "Attempt {Attempt}/{MaxAttempts}: {ErrorKind}; Status code = {StatusCode}; Delay: {Delay}; Is final attempt: {IsFinalAttempt}",
                 attempt + 1,
                 httpRetryStrategy.MaxAttempts,
@@ -126,7 +131,7 @@ public abstract class CircuitBreakerBase
     private DateTime? blockedUntilUtc;
     private readonly Lock sync = new();
     
-    public const int FailuresBeforeBreak = 10;
+    public const int FailuresBeforeBreak = 1;
     public static readonly TimeSpan FailureWindow = TimeSpan.FromMinutes(1);
     public static readonly TimeSpan BreakDuration = TimeSpan.FromSeconds(30);
 
@@ -154,17 +159,11 @@ public abstract class CircuitBreakerBase
     {
         lock (sync)
         {
-            if (blockedUntilUtc is not null &&
-                blockedUntilUtc > DateTime.UtcNow)
-            {
-                throw new CircuitBreakerBlocksException(
-                    $"Circuit breaker blocks until {blockedUntilUtc:O}");
-            }
+            if (blockedUntilUtc is not null && blockedUntilUtc > DateTime.UtcNow)
+                throw new CircuitBreakerBlocksException($"Circuit breaker blocks until {blockedUntilUtc:O}");
 
             if (blockedUntilUtc <= DateTime.UtcNow)
-            {
                 blockedUntilUtc = null;
-            }
         }
     }
 
@@ -175,8 +174,7 @@ public abstract class CircuitBreakerBase
             var now = DateTime.UtcNow;
             failures.Enqueue(now);
 
-            while (failures.Count > 0 &&
-                   now - failures.Peek() > FailureWindow)
+            while (failures.Count > 0 && now - failures.Peek() > FailureWindow)
             {
                 failures.Dequeue();
             }
