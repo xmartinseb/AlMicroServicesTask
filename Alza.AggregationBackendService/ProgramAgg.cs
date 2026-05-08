@@ -171,6 +171,7 @@ if (app.Environment.IsDevelopment())
     //app.MapOpenApi();
 }
 
+app.UseRateLimiter();
 app.UseHttpsRedirection();
 app.Use(async (context, next) =>
 {
@@ -190,7 +191,6 @@ app.Use(async (context, next) =>
         await next();
     }
 });
-app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapPrometheusScrapingEndpoint();

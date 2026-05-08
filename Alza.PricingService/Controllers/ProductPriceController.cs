@@ -3,12 +3,14 @@ using Alza.PricingService.Data;
 using Alza.PricingService.Models;
 using Caches;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using System.Net;
 
 namespace Alza.PricingService.Controllers;
 
 [ApiController]
+[EnableRateLimiting("default")]
 [Route("[controller]")]
 public class ProductPriceController(IPricingDb db, InMemoryCacheWithSemaphores cache, IOptions<CacheOptions> cacheConfig,
     ILogger<ProductPriceController> logger) : ControllerBase
@@ -20,7 +22,7 @@ public class ProductPriceController(IPricingDb db, InMemoryCacheWithSemaphores c
     public async Task<ActionResult<ProductPrice>> Get(Guid productId, CancellationToken cancellationToken)
     {
         // Note: this example requires some latency and occasional failures
-        switch (Random.Shared.Next(5))
+        switch (Random.Shared.Next(2))
         {
             case 0:
                 return StatusCode((int)HttpStatusCode.InternalServerError);

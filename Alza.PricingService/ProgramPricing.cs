@@ -4,6 +4,7 @@ using Caches;
 using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Context;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,17 @@ builder.Services.Configure<CacheOptions>(builder.Configuration.GetSection("Cache
 builder.Services.AddSingleton<InMemoryCacheWithSemaphores>();
 
 builder.Host.UseSerilog((ctx, lc) => lc.ReadFrom.Configuration(ctx.Configuration));
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("default", httpContext =>
+    RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.User.Identity?.Name ?? httpContext.Connection.RemoteIpAddress?.ToString(),
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromSeconds(10)
+        }));
+});
 
 var app = builder.Build();
 // Configure the HTTP request pipeline.
@@ -41,6 +53,7 @@ if (app.Environment.IsDevelopment())
     //app.MapOpenApi();
 }
 
+app.UseRateLimiter();
 app.Use(async (context, next) =>
 {
     const string headerName = "X-Correlation-ID";

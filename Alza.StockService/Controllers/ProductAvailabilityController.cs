@@ -3,11 +3,13 @@ using Alza.StockService.Data;
 using Alza.StockService.Models;
 using Caches;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 
 namespace Alza.StockService.Controllers;
 
 [ApiController]
+[EnableRateLimiting("default")]
 [Route("[controller]")]
 public class ProductAvailabilityController(IStockDb db, InMemoryCacheWithSemaphores cache, IOptions<CacheOptions> cacheConfig,
     ILogger<ProductAvailabilityController> logger) : ControllerBase

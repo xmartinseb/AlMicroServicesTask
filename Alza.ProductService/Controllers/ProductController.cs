@@ -3,11 +3,13 @@ using Alza.ProductService.Data;
 using Alza.ProductService.Models;
 using Caches;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 
 namespace Alza.ProductService.Controllers;
 
 [ApiController]
+[EnableRateLimiting("default")]
 [Route("[controller]")]
 public class ProductController(IProductDb db, InMemoryCacheWithSemaphores cache, IOptions<CacheOptions> cacheConfig,
     ILogger<ProductController> logger) : ControllerBase
