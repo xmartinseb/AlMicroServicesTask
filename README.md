@@ -37,7 +37,7 @@ Each of the microservices provides some partial information about the product an
 - Data fetching from microservices uses several steps.
   1. Aggr. service fetches the data from the local cache if it's stored and not expired. The data mutates rarely, hence it is useful to provide the loaded data to more requests. It leads to better latency (less HTTP communication, less queries into the database)
   2. If the cache doesn't provide the required data, the system checks whether the microservice isn't blocked by circuit breaker. It prevents the distributed system from useless communication with a dead service
-  3. If the microservice isn't blocked, the aggr. service sends a HTTP request to the microservice. If the request fails with a transient error (timeout, temporal unavailability, etc), the aggr. service sends it again using the retry strategy from appsettings.json
+  3. If the microservice isn't blocked, the aggr. service sends a HTTP request to the microservice. If the request fails with a **transient error** (timeout, temporal unavailability, etc), the aggr. service sends it again using the retry strategy from appsettings.json
   4. When the aggr. service gets the response, it stores the data to the cache
 - HTTP requests and responses between the services uses **Correlation ID**. It binds the related communication (one client's request can consist of four single requests) and allows better investigation in the logs
 - Every service uses logs (console and files) with **Serilog** library. It automatically removes old files and rotates them, which prevents us from extreme disk consumption

@@ -18,16 +18,16 @@ public class ProductPriceController(IPricingDb db, InMemoryCacheWithSemaphores c
     [HttpGet("{productId}")]
     [ProducesResponseType(typeof(ProductPrice), 200)]
     [ProducesResponseType((int)HttpStatusCode.InternalServerError)]
-    [ProducesResponseType((int)HttpStatusCode.NotFound)]
+    [ProducesResponseType((int)HttpStatusCode.TooManyRequests)]
     public async Task<ActionResult<ProductPrice>> Get(Guid productId, CancellationToken cancellationToken)
     {
         // Note: this example requires some latency and occasional failures
-        switch (Random.Shared.Next(2))
+        switch (Random.Shared.Next(5))
         {
             case 0:
                 return StatusCode((int)HttpStatusCode.InternalServerError);
             case 1:
-                return StatusCode((int)HttpStatusCode.NotFound);
+                return StatusCode((int)HttpStatusCode.TooManyRequests);
         }
 
         await Task.Delay(TimeSpan.FromMilliseconds(Random.Shared.Next(500, 800)), cancellationToken);
