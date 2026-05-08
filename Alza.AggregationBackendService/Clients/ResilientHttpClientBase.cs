@@ -11,13 +11,15 @@ namespace Alza.AggregationBackendService.Clients;
 public abstract class ResilientHttpClientBase
 {
     private readonly HttpRetryStrategy httpRetryStrategy;
+    private readonly CircuitBreakerBase circuitBreaker;
     private readonly HttpClient client;
     private readonly ILogger logger;
 
-    protected ResilientHttpClientBase(HttpClient client, ILogger logger, HttpRetryStrategy httpRetryStrategy)
+    protected ResilientHttpClientBase(HttpClient client, ILogger logger, HttpRetryStrategy httpRetryStrategy, CircuitBreakerBase circuitBreaker)
     {
         httpRetryStrategy.ThrowIfInvalid();
         this.httpRetryStrategy = httpRetryStrategy;
+        this.circuitBreaker = circuitBreaker;
         this.client = client;
         this.logger = logger;
     }
@@ -31,7 +33,7 @@ public abstract class ResilientHttpClientBase
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                return await httpGetTask(client);
+                return await circuitBreaker.TryExecuteHttpCallAsync(() => httpGetTask(client));
             }
             catch (ExternalServiceTimeoutException)
             {
@@ -116,3 +118,79 @@ public sealed class HttpRetryStrategy
         Guard.Against.NegativeOrZero(RequestTimeout);
     }
 }
+
+
+public abstract class CircuitBreakerBase
+{
+    private readonly Queue<DateTime> failures = new();
+    private DateTime? blockedUntilUtc;
+    private readonly Lock sync = new();
+    
+    public const int FailuresBeforeBreak = 10;
+    public static readonly TimeSpan FailureWindow = TimeSpan.FromMinutes(1);
+    public static readonly TimeSpan BreakDuration = TimeSpan.FromSeconds(30);
+
+    public async Task<TEntity> TryExecuteHttpCallAsync<TEntity>(
+        Func<Task<TEntity>> httpCall)
+    {
+        ThrowIfBlocked();
+
+        try
+        {
+            return await httpCall();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            RegisterFailure();
+            throw;
+        }
+    }
+
+    private void ThrowIfBlocked()
+    {
+        lock (sync)
+        {
+            if (blockedUntilUtc is not null &&
+                blockedUntilUtc > DateTime.UtcNow)
+            {
+                throw new CircuitBreakerBlocksException(
+                    $"Circuit breaker blocks until {blockedUntilUtc:O}");
+            }
+
+            if (blockedUntilUtc <= DateTime.UtcNow)
+            {
+                blockedUntilUtc = null;
+            }
+        }
+    }
+
+    private void RegisterFailure()
+    {
+        lock (sync)
+        {
+            var now = DateTime.UtcNow;
+            failures.Enqueue(now);
+
+            while (failures.Count > 0 &&
+                   now - failures.Peek() > FailureWindow)
+            {
+                failures.Dequeue();
+            }
+
+            if (failures.Count >= FailuresBeforeBreak)
+            {
+                blockedUntilUtc = now + BreakDuration;
+                failures.Clear();
+            }
+        }
+    }
+}
+
+/// <summary>
+/// Is thrown when the circuit breaker is currently blocking calls to the external service due to recent failures.
+/// </summary>
+public class CircuitBreakerBlocksException(string message) : Exception(message);

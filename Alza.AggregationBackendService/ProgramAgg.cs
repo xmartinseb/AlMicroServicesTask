@@ -127,6 +127,10 @@ builder.Services.AddHttpClient<IStockClient, ResilientStockClient>((sp, client) 
     .AddHttpMessageHandler<CorrelationIdHandler>()
     .AddHttpMessageHandler<AuthForwardingHandler>();
 
+builder.Services.AddSingleton<ResilientProductClientCircuitBreaker>();
+builder.Services.AddSingleton<ResilientPricingClientCircuitBreaker>();
+builder.Services.AddSingleton<ResilientStockClientCircuitBreaker>();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.AddPolicy("default", httpContext =>

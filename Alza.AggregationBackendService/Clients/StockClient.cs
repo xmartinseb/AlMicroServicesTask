@@ -11,8 +11,8 @@ public interface IStockClient
     Task<ProductAvailability> GetProductAvailabilityAsync(Guid productId, CancellationToken cancellationToken);
 }
 
-public sealed class ResilientStockClient(HttpClient httpClient, IOptions<StockClientOptions> clientOps, ILogger<ResilientStockClient> logger) 
-    : ResilientHttpClientBase(httpClient, logger, clientOps.Value.HttpRetryStrategy), IStockClient
+public sealed class ResilientStockClient(HttpClient httpClient, IOptions<StockClientOptions> clientOps, ILogger<ResilientStockClient> logger, ResilientStockClientCircuitBreaker circuitBreaker) 
+    : ResilientHttpClientBase(httpClient, logger, clientOps.Value.HttpRetryStrategy, circuitBreaker), IStockClient
 {
     public Task<ProductAvailability> GetProductAvailabilityAsync(Guid productId, CancellationToken cancellationToken)
         => ExecuteRetryStrategy(client => client.UserFriendlyGetObjectAsync<ProductAvailability>($"/ProductAvailability/{productId}", cancellationToken), cancellationToken);
@@ -40,3 +40,5 @@ public sealed class CachedStockClient(IStockClient stockClient, InMemoryCacheWit
 
     private static readonly Histogram<int> serviceHttpLatencyHistogram = HttpLatencyMeter.CreateHistogram<int>("stock_service_latency");
 }
+
+public sealed class ResilientStockClientCircuitBreaker : CircuitBreakerBase;

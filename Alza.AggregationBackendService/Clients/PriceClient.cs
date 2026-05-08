@@ -19,8 +19,8 @@ public interface IPricingClient
 /// It also uses a retry strategy to handle unavailability of the microservice or transient errors. 
 /// The strategy is defined in the configuration and is applied to all HTTP calls to the microservice.
 /// </summary>
-public sealed class ResilientPricingClient(HttpClient httpClient, IOptions<PricingClientOptions> clientOps, ILogger<ResilientPricingClient> logger)
-    : ResilientHttpClientBase(httpClient, logger, clientOps.Value.HttpRetryStrategy), IPricingClient
+public sealed class ResilientPricingClient(HttpClient httpClient, IOptions<PricingClientOptions> clientOps, ILogger<ResilientPricingClient> logger, ResilientPricingClientCircuitBreaker circuitBreaker)
+    : ResilientHttpClientBase(httpClient, logger, clientOps.Value.HttpRetryStrategy, circuitBreaker), IPricingClient
 {
     public Task<ProductPrice> GetProductPriceAsync(Guid productId, CancellationToken cancellationToken)
         => ExecuteRetryStrategy(client => client.UserFriendlyGetObjectAsync<ProductPrice>($"/ProductPrice/{productId}", cancellationToken), cancellationToken);
@@ -70,3 +70,5 @@ public sealed class CachedPricingClient(IPricingClient pricingClient, InMemoryCa
 
     private static readonly Histogram<int> serviceHttpLatencyHistogram = HttpLatencyMeter.CreateHistogram<int>("pricing_service_latency");
 }
+
+public sealed class ResilientPricingClientCircuitBreaker : CircuitBreakerBase;

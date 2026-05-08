@@ -11,8 +11,8 @@ public interface IProductClient
     Task<Product> GetProductAsync(Guid productId, CancellationToken cancellationToken);
 }
 
-public sealed class ResilientProductClient(HttpClient httpClient, IOptions<ProductClientOptions> clientOps, ILogger<ResilientProductClient> logger)
-    : ResilientHttpClientBase(httpClient, logger, clientOps.Value.HttpRetryStrategy), IProductClient
+public sealed class ResilientProductClient(HttpClient httpClient, IOptions<ProductClientOptions> clientOps, ILogger<ResilientProductClient> logger, ResilientProductClientCircuitBreaker circuitBreaker)
+    : ResilientHttpClientBase(httpClient, logger, clientOps.Value.HttpRetryStrategy, circuitBreaker), IProductClient
 {
     public Task<Product> GetProductAsync(Guid productId, CancellationToken cancellationToken)
         => ExecuteRetryStrategy(client => client.UserFriendlyGetObjectAsync<Product>($"/Product/{productId}", cancellationToken), cancellationToken);
@@ -39,3 +39,5 @@ public sealed class CachedProductClient(IProductClient productClient, InMemoryCa
 
     private static readonly Histogram<int> serviceHttpLatencyHistogram = HttpLatencyMeter.CreateHistogram<int>("product_service_latency");
 }
+
+public sealed class ResilientProductClientCircuitBreaker : CircuitBreakerBase;
