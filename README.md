@@ -5,13 +5,16 @@
                 ┌─────────────────────────────┐
                 │ Aggregation Backend Service │
                 └───────────┬───┬───┬──logs───┘
-                            *   *   *      *HTTP with retry strategies and Correlation ID and with HISTOGRAM METRICS
+                            │   │   │      
              ┌───required───┘   │   └─────────────────┐
              │                  │                     │
         ┌────▼──────────────────▼─────────────────────▼─────┐
-        │        CACHE - one in memory cache, shared        │
+        │        CACHE - shared in memory cache             │
         └────▼──────────────────▼─────────────────────▼─────┘
              │                  │                     │
+      circuit breaker     crcuit breaker       circuit breaker 
+             │                  │                     │
+             │ *http            │ *http               │ *http
     ┌────────▼────────┐  ┌──────▼────────┐   ┌────────▼────────┐
     │ Product Service │  │ Stock Service │   │ Pricing Service │
     └────────┬───logs─┘  └───────┬──logs─┘   └────────┬───logs─┘
@@ -22,18 +25,20 @@
          │  DB   │           │   DB  │            │  DB   │
          └───────┘           └───────┘            └───────┘
      
-     ** If we use SQL servers, caches are esecially useful, because SQL tends to become a bottleneck 
+     *  HTTP with retry strategies and Correlation ID and with HISTOGRAM METRICS
+     ** If we use SQL servers, caches are especially useful, because SQL tends to become a bottleneck 
 
 This project consists of one aggregation API service and three microservices: Product Service, Stock Service, and Pricing Service. 
 Each of the microservices provides some partial information about the product and the aggregation service is responsible for calling them and combining the results into a single response.
 
 - Product service is **critical**. It is required to get the product information. If it fails, the whole request will fail, because the customer would not be able to identify the product.
 - Stock service and pricing service are **not critical**. If they fail, the aggregation service will return the product information with null values for stock or price. This way, the customer can still see the product.
-- Aggr. service calls the microservices **in parallel**, because the requests are fully independent operations. It reduces the latency heavily.
+- Aggr. service calls the microservices **in parallel**, because the requests are fully independent operations. It **reduces the latency** heavily.
 - Data fetching from microservices uses several steps.
   1. Aggr. service fetches the data from the local cache if it's stored and not expired. The data mutates rarely, hence it is useful to provide the loaded data to more requests. It leads to better latency (less HTTP communication, less queries into the database)
-  2. If the cache doesn't provide the required data, the aggr. service sends a HTTP request to the microservice. If the request fails with a transient error (timeout, temporal unavailability, etc), the aggr. service sends it again using the retry strategy from appsettings.json
-  3. When the aggr. service gets the response, it stores the data to the cache
+  2. If the cache doesn't provide the required data, the system checks whether the microservice isn't blocked by circuit breaker. It prevents the distributed system from useless communication with a dead service
+  3. If the microservice isn't blocked, the aggr. service sends a HTTP request to the microservice. If the request fails with a transient error (timeout, temporal unavailability, etc), the aggr. service sends it again using the retry strategy from appsettings.json
+  4. When the aggr. service gets the response, it stores the data to the cache
 - HTTP requests and responses between the services uses **Correlation ID**. It binds the related communication (one client's request can consist of four single requests) and allows better investigation in the logs
 - Every service uses logs (console and files) with **Serilog** library. It automatically removes old files and rotates them, which prevents us from extreme disk consumption
 - Aggregation service has **/metrics** endpoint. It shows **latency histograms** of the microservices and **cache hits/misses** in Prometheus, which is a human-readable format, but it is typically used for Grafana or other chart generators. 
