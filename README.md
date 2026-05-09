@@ -91,9 +91,18 @@ Even though it is an essential part of any solution, it also has its cons:
 - Circuit breaker: uses lock instead of some lock-free approaches
 - Every microservice has many special service types registered. There could be a nicer approach.
 - In real system, I'd introduce more microservice error states for API consumers
+- I implemented integration tests only for the aggr. service, not for every service
 
 ## Failure scenarios
 
-### AAA
+### DB failure (The microservices aren't able to load new data)
+- they return status 500
+- Aggr. service is retrying to send a request to the microservice, depending on the configuration.
+  - It it exceeds the retry limit, the circuit breaker in the aggr. service is activated for some time, which stops the communication with the service and prevents the network from overwhelming
+- Aggr. service use cached data until they've expired
+- After the expiration: Partial failure or full failure, depending on the data type: critical (product data) / non critical (pricing, stock)
 
-### BBB
+### Microservice is unavailable (e.g. timeout)
+- Aggr. service doesn't know it until the cached data expires
+  - Then: retrying to send a request to the microservice, depending on the configuration
+  - If it exceeds the retry limit
