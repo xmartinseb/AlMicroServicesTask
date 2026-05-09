@@ -197,6 +197,8 @@ app.MapPrometheusScrapingEndpoint();
 app.MapControllers();
 app.Run();
 
+public partial class Program;
+
 
 
 //public static class TokenGenerator
