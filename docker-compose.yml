@@ -1,0 +1,27 @@
+services:
+
+  aggregation:
+    build:
+      context: .
+      dockerfile: Alza.AggregationBackendService/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - product
+      - pricing
+      - stock
+
+  product:
+    build:
+      context: .
+      dockerfile: Alza.ProductService/Dockerfile
+
+  pricing:
+    build:
+      context: .
+      dockerfile: Alza.PricingService/Dockerfile
+
+  stock:
+    build:
+      context: .
+      dockerfile: Alza.StockService/Dockerfile

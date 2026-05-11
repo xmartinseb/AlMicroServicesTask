@@ -1,4 +1,13 @@
-# Alza
+# How to run
+Use **Docker**
+Run this command in solution folder that contains docker compose:  **docker compose up --build**
+
+It builds every service and runs them in *Release mode*. Then, you can open these endpoints:
+1. http://localhost:8080/swagger/index.html
+2. http://localhost:8080/metrics
+
+
+# Project description
 
 ## Orchestration approach
 
@@ -94,6 +103,7 @@ Even though it is an essential part of any solution, it also has its cons:
 - I implemented integration tests only for the aggr. service, not for every service
 - I used OAuth only in the aggr. service and without real external OAuth provider, I just used demo fake provider that accepts **any token**
 - I used in memory caches with per item locks (semaphores). It guarantees that every record is created with a single http request even in high concurrency scenarios (many requests at the same time). However, **I haven't implemented** removing the semaphores.
+- I don't use HTTPS redirection because it simplifies docker demo
 
 ## Failure scenarios
 

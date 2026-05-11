@@ -129,14 +129,11 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
+app.UseSwagger();
+app.UseSwaggerUI();
 app.UseRateLimiter();
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
+
 app.Use(async (context, next) =>
 {
     const string headerName = "X-Correlation-ID";

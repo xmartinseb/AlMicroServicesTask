@@ -44,13 +44,8 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-    //app.MapOpenApi();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseRateLimiter();
 app.Use(async (context, next) =>
@@ -71,7 +66,8 @@ app.Use(async (context, next) =>
         await next();
     }
 });
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
+
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
