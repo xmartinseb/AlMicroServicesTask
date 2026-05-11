@@ -1,6 +1,9 @@
 # How to run
 Use **Docker**
-Run this command in solution folder that contains docker compose:  **docker compose up --build**
+Run this command in solution folder that contains docker compose: 
+```
+docker compose up --build
+```
 
 It builds every service and runs them in *Release mode*. Then, you can open these endpoints:
 1. http://localhost:8080/swagger/index.html
