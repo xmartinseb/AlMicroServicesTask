@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Moq;
+using System.Net.Http.Headers;
 
 namespace Alza.IntegrTests;
 
@@ -41,6 +42,7 @@ public abstract class IntegrationTestBase : IClassFixture<WebApplicationFactory<
             });
 
         client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "test-token");
     }
 
     private static Mock<IProductClient> CreateProductMock(ServiceTestBehavior behavior)
