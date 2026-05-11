@@ -89,9 +89,10 @@ Even though it is an essential part of any solution, it also has its cons:
 ## What I intentionally simplified 
 - Metrics only for the aggregation service. I'd use them in every service if I had a real system
 - Circuit breaker: uses lock instead of some lock-free approaches
-- Every microservice has many special service types registered. There could be a nicer approach.
+- Every microservice has many special service types registered. There could be a nicer approach
 - In real system, I'd introduce more microservice error states for API consumers
 - I implemented integration tests only for the aggr. service, not for every service
+- I used OAuth only in the aggr. service and without real external OAuth provider, I just used demo fake provider that accepts **any token**
 - I used in memory caches with per item locks (semaphores). It guarantees that every record is created with a single http request even in high concurrency scenarios (many requests at the same time). However, **I haven't implemented** removing the semaphores.
 
 ## Failure scenarios
@@ -105,7 +106,7 @@ Even though it is an essential part of any solution, it also has its cons:
 4. Aggr. service will return partial failure (null values and error list) or full failure (error 500), depending on the data type: critical (product data) / non critical (pricing, stock)
 
 Potential solutions:
-- Is the DB a bottleneck? We could redesign the caches or use horizontal scalable non-SQL systems (e.g. MongoDB)
+- Is the DB a bottleneck? We could use more caching or use horizontal scalable non-SQL systems (e.g. MongoDB)
 - Do we have SQL timeouts? We may have inefficient db index.
 
 ### Microservice is unavailable
