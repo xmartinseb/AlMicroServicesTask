@@ -1,5 +1,5 @@
 # How to run
-Use **Docker**
+## Use **Docker**
 Run this command in solution folder that contains docker compose: 
 ```
 docker compose up --build
@@ -9,6 +9,11 @@ It builds every service and runs them in *Release mode*. Then, you can open thes
 1. http://localhost:8080/swagger/index.html
 2. http://localhost:8080/metrics
 
+## Debugging with Visual Studio
+If you can't use docker, do this instead:
+1. Uncomment debugging ports in appsettings.json of the aggr. service
+2. Run three microservices using the Windows script **RunMicroservicesDebug.ps1**
+3. Run aggr. service in Visual studio in Debug mode
 
 # Project description
 
