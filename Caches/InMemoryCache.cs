@@ -5,7 +5,7 @@ namespace Caches;
 
 /// <summary>
 /// Wraps an IMemoryCache and adds a synchronization to prevent multiple factory calls
-/// (IMemoryCache helps with storage, but doesn't have synchronization over data retrieval -- it could lead to extra http requests)
+/// (IMemoryCache helps with storage, but doesn't have synchronization over data retrieval -- it could lead to extra http requests in high concurrent scenarios)
 /// This class MUST be registered as a singleton service, because it has to be shared between multiple HTTP requests.
 /// </summary>
 /// <param name="cache"></param>

@@ -108,6 +108,7 @@ Even though it is an essential part of any solution, it also has its cons:
 Potential solutions:
 - Is the DB a bottleneck? We could use more caching or use horizontal scalable non-SQL systems (e.g. MongoDB)
 - Do we have SQL timeouts? We may have inefficient db index.
+- In some scenarios, it could be useful to refresh some hot data in the cache regularly with one batch DB query
 
 ### Microservice is unavailable
 1. Aggr. service is working normally as long as there are valid cached data (no requests needed)

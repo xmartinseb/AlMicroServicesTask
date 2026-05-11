@@ -20,7 +20,10 @@ public sealed class ProductAggregatedInfoService(ILogger<ProductAggregatedInfoSe
         var getAvailabilityTask = cachedStockClient.GetObjectAsync(productId, cancellationToken);
 
         var microservicesErrors = new List<SharedErrorModel>();
+        // Note: product detail is CRITICAL service - if it fails, we can't return any meaningful data to the caller, so we throw an exception and fail the whole HTTP request with an error status code.
         Product product = await GetResultOrThrowAsync(getProductTask, "Product service");
+
+        // Note: price and availability details are NON-CRITICAL - if any of those fail, we still return data from other services with error details in the response
         var price = await TryGetOptionalServiceDataAsync(getPriceTask, microservicesErrors, "Pricing service", "PRICING_SERVICE_ERROR");
         var availability = await TryGetOptionalServiceDataAsync(getAvailabilityTask, microservicesErrors, "Stock service", "STOCK_SERVICE_ERROR");
 
@@ -57,7 +60,7 @@ public sealed class ProductAggregatedInfoService(ILogger<ProductAggregatedInfoSe
             logger.LogError(ex, "{Service} failed", serviceName);
             throw;
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException)
         {
             throw;
         }
